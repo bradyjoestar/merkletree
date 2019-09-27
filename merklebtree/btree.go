@@ -16,16 +16,20 @@
 // References: https://en.wikipedia.org/wiki/B-tree
 package merklebtree
 
+import "crypto/sha256"
+
 // Tree holds elements of the B-tree
 type Tree struct {
-	Root *Node // Root node
-	size int   // Total number of keys in the tree
-	m    int   // order (maximum number of children)
+	Root       *Node // Root node
+	merkleRoot []byte
+	size       int // Total number of keys in the tree
+	m          int // order (maximum number of children)
 }
 
 // Node is a single element within the tree
 type Node struct {
 	Parent   *Node
+	Hash     []byte
 	Contents []*Content // Contained keys in node
 	Children []*Node    // Children nodes
 }
@@ -34,14 +38,57 @@ func (node *Node) Put(item Content) {
 	node.Contents = append(node.Contents, &item)
 }
 
+// CalculateHash update the merkle hash of node,include children and content.
+func (tree *Tree) CalculateHash(node *Node) ([]byte, error) {
+	h := sha256.New()
+	var bytes []byte
+
+	for _, content := range node.Contents {
+		hash, err := (*content).CalculateHash()
+		if err != nil {
+			return nil, err
+		}
+		bytes = append(bytes, hash...)
+	}
+
+	for _, children := range node.Children {
+		bytes = append(bytes, children.Hash...)
+	}
+
+	if _, err := h.Write(bytes); err != nil {
+		return nil, err
+	}
+
+	node.Hash = h.Sum(nil)
+
+	if node == tree.Root {
+		tree.merkleRoot = node.Hash
+	}
+
+	return node.Hash, nil
+}
+
+//ReCalculateMerkleRoot update Merkleroot from node to root node.
+func (tree *Tree) ReCalculateMerkleRoot(node *Node) ([]byte, error) {
+	if node == tree.Root {
+		return tree.CalculateHash(node)
+	} else {
+		_, err := tree.CalculateHash(node)
+		if err != nil {
+			return nil, err
+		}
+		return tree.ReCalculateMerkleRoot(node.Parent)
+	}
+}
+
 type Content interface {
-	// Less tests whether the current item is less than the given argument.
+	// CalculateHash calculate the hash of content
+	CalculateHash() ([]byte, error)
 
 	// If a.Comparator(b) return
 	// negative , if a < b
 	// zero     , if a == b
 	// positive , if a > b
-
 	Comparator(than Content) int
 }
 
@@ -62,6 +109,13 @@ func (tree *Tree) Put(item Content) {
 	if tree.Root == nil {
 		tree.Root = &Node{Contents: []*Content{content}, Children: []*Node{}}
 		tree.size++
+
+		//calculate merkle root hash
+		err := tree.ReCalculateMerkleRoot(tree.Root)
+		if err != nil {
+			panic(err)
+		}
+
 		return
 	}
 

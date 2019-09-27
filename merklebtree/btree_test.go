@@ -43,6 +43,10 @@ func (a Item) Comparator(b Content) int {
 	}
 }
 
+func (a Item) CalculateHash() ([]byte, error) {
+	return nil, nil
+}
+
 // IntComparator provides a basic comparison on int
 func (a Item2) Comparator(b Content) int {
 	bAsserted := b.(Item2)
@@ -56,6 +60,10 @@ func (a Item2) Comparator(b Content) int {
 	}
 }
 
+func (a Item2) CalculateHash() ([]byte, error) {
+	return nil, nil
+}
+
 // IntComparator provides a basic comparison on int
 func (a Item3) Comparator(b Content) int {
 	bAsserted := b.(Item3)
@@ -67,6 +75,10 @@ func (a Item3) Comparator(b Content) int {
 	default:
 		return 0
 	}
+}
+
+func (a Item3) CalculateHash() ([]byte, error) {
+	return nil, nil
 }
 
 func TestBTreeGet1(t *testing.T) {
