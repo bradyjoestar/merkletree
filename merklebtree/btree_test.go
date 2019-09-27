@@ -13,8 +13,8 @@ import (
 
 // Int implements the Item interface for integers.
 type Item struct {
-	Key   int
-	Value string
+	Key   int    `json:"key"`
+	Value string `json:"value"`
 }
 
 type Item2 struct {
@@ -23,8 +23,8 @@ type Item2 struct {
 }
 
 type Item3 struct {
-	Key   int
-	Value interface{}
+	Key   int         `json:"key"`
+	Value interface{} `json:"value"`
 }
 
 type TestData struct {
@@ -46,7 +46,16 @@ func (a Item) Comparator(b Content) int {
 }
 
 func (a Item) CalculateHash() ([]byte, error) {
-	return nil, nil
+	h := sha256.New()
+	jsonBytes, err := json.Marshal(a)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := h.Write(jsonBytes); err != nil {
+		return nil, err
+	}
+
+	return h.Sum(nil), nil
 }
 
 // IntComparator provides a basic comparison on int
@@ -89,7 +98,16 @@ func (a Item3) Comparator(b Content) int {
 }
 
 func (a Item3) CalculateHash() ([]byte, error) {
-	return nil, nil
+	h := sha256.New()
+	jsonBytes, err := json.Marshal(a)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := h.Write(jsonBytes); err != nil {
+		return nil, err
+	}
+
+	return h.Sum(nil), nil
 }
 
 func TestBTreeGet1(t *testing.T) {

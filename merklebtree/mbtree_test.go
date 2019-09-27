@@ -38,6 +38,21 @@ func TestMBTreePut1(t *testing.T) {
 	assertValidMerkleRoot(t, tree.MerkleBTreeRoot(), tree.calculateMerkleRoot())
 }
 
+func TestMBTreePut2(t *testing.T){
+	const max = 1000
+	orders := []int{3, 4, 5, 6, 7, 8, 9, 10, 20, 100, 500}
+	for _, order := range orders {
+		tree := NewWith(order)
+		{
+			for i := 1; i <= max; i++ {
+				tree.Put(Item2{Key: i, Value: i})
+				assertValidMerkleRoot(t, tree.MerkleBTreeRoot(), tree.calculateMerkleRoot())
+			}
+
+		}
+	}
+}
+
 func assertValidMerkleRoot(t *testing.T, str1 string, str2 string) {
 	if strings.Compare(str1, str2) != 0 {
 		t.Errorf("Got %v expected %v for MerkleRoot", str1, str2)
