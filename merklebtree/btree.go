@@ -111,7 +111,7 @@ func (tree *Tree) Put(item Content) {
 		tree.size++
 
 		//calculate merkle root hash
-		err := tree.ReCalculateMerkleRoot(tree.Root)
+		_, err := tree.ReCalculateMerkleRoot(tree.Root)
 		if err != nil {
 			panic(err)
 		}
