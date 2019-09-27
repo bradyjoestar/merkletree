@@ -16,14 +16,16 @@
 // References: https://en.wikipedia.org/wiki/B-tree
 package merklebtree
 
-import "crypto/sha256"
+import (
+	"crypto/sha256"
+	"encoding/hex"
+)
 
 // Tree holds elements of the B-tree
 type Tree struct {
-	Root       *Node // Root node
-	merkleRoot []byte
-	size       int // Total number of keys in the tree
-	m          int // order (maximum number of children)
+	Root *Node // Root node
+	size int   // Total number of keys in the tree
+	m    int   // order (maximum number of children)
 }
 
 // Node is a single element within the tree
@@ -60,10 +62,6 @@ func (tree *Tree) CalculateHash(node *Node) ([]byte, error) {
 	}
 
 	node.Hash = h.Sum(nil)
-
-	if node == tree.Root {
-		tree.merkleRoot = node.Hash
-	}
 
 	return node.Hash, nil
 }
@@ -171,6 +169,14 @@ func (tree *Tree) Clear() {
 	tree.size = 0
 }
 
+func (tree *Tree) MerkleBTreeRoot() string {
+	if tree.Root == nil {
+		return ""
+	} else {
+		return hex.EncodeToString(tree.Root.Hash)
+	}
+}
+
 // Height returns the height of the tree.
 func (tree *Tree) Height() int {
 	return tree.Root.height()
@@ -264,6 +270,48 @@ func (tree *Tree) search(node *Node, item Content) (index int, found bool) {
 	return low, false
 }
 
+// deep search the tree and return the node
+func (tree *Tree) deepSearch() [][]*Node {
+	var nodes [][]*Node
+	if tree.Root == nil {
+		return nodes
+	}
+	var startnodes, nextnodes []*Node
+	startnodes = append(startnodes, tree.Root)
+	nodes = append(nodes, startnodes)
+
+	for true {
+		for _, node := range startnodes {
+			nextnodes = append(nextnodes, node.Children...)
+		}
+		nodes = append(nodes, nextnodes)
+		startnodes = nextnodes
+		nextnodes = nil
+		if len(startnodes) == 0 {
+			break
+		}
+		if tree.isLeaf(startnodes[0]) {
+			break
+		}
+	}
+
+	return nodes
+}
+
+// calculateMerkleRoot by iterator the tree
+func (tree *Tree) calculateMerkleRoot() string {
+	if tree.Root == nil {
+		return ""
+	}
+	nodes := tree.deepSearch()
+	for i := len(nodes) - 1; i < 0; i-- {
+		for j := 0; j < len(nodes[i]); j++ {
+			tree.CalculateHash(nodes[i][j])
+		}
+	}
+	return hex.EncodeToString(tree.Root.Hash)
+}
+
 // searchRecursively searches recursively down the tree starting at the startNode
 func (tree *Tree) searchRecursively(startNode *Node, item Content) (node *Node, index int, found bool) {
 	if tree.Empty() {
@@ -293,6 +341,7 @@ func (tree *Tree) insertIntoLeaf(node *Node, content *Content) (inserted bool) {
 	insertPosition, found := tree.search(node, *content)
 	if found {
 		node.Contents[insertPosition] = content
+		tree.ReCalculateMerkleRoot(node)
 		return false
 	}
 	// Insert content's key in the middle of the node
@@ -307,6 +356,7 @@ func (tree *Tree) insertIntoInternal(node *Node, content *Content) (inserted boo
 	insertPosition, found := tree.search(node, *content)
 	if found {
 		node.Contents[insertPosition] = content
+		tree.ReCalculateMerkleRoot(node)
 		return false
 	}
 	return tree.insert(node.Children[insertPosition], content)
@@ -314,6 +364,7 @@ func (tree *Tree) insertIntoInternal(node *Node, content *Content) (inserted boo
 
 func (tree *Tree) split(node *Node) {
 	if !tree.shouldSplit(node) {
+		tree.ReCalculateMerkleRoot(node)
 		return
 	}
 
@@ -355,6 +406,10 @@ func (tree *Tree) splitNonRoot(node *Node) {
 	copy(parent.Children[insertPosition+2:], parent.Children[insertPosition+1:])
 	parent.Children[insertPosition+1] = right
 
+	tree.CalculateHash(left)
+	tree.CalculateHash(right)
+	tree.CalculateHash(parent)
+
 	tree.split(parent)
 }
 
@@ -371,6 +426,8 @@ func (tree *Tree) splitRoot() {
 		setParent(left.Children, left)
 		setParent(right.Children, right)
 	}
+	tree.CalculateHash(left)
+	tree.CalculateHash(right)
 
 	// Root is a node with one content and two children (left and right)
 	newRoot := &Node{
@@ -381,6 +438,7 @@ func (tree *Tree) splitRoot() {
 	left.Parent = newRoot
 	right.Parent = newRoot
 	tree.Root = newRoot
+	tree.CalculateHash(newRoot)
 }
 
 func setParent(nodes []*Node, parent *Node) {
