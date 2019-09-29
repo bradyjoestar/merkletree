@@ -304,12 +304,12 @@ func (tree *Tree) calculateMerkleRoot() string {
 		return ""
 	}
 	nodes := tree.deepSearch()
-	for i := len(nodes) - 1; i < 0; i-- {
+	for i := len(nodes) - 1; i > 0; i-- {
 		for j := 0; j < len(nodes[i]); j++ {
 			tree.CalculateHash(nodes[i][j])
 		}
 	}
-	return hex.EncodeToString(tree.Root.Hash)
+	return hex.EncodeToString(nodes[0][0].Hash)
 }
 
 // searchRecursively searches recursively down the tree starting at the startNode
@@ -528,7 +528,10 @@ func (tree *Tree) rebalance(node *Node, deletedItem Content) {
 	// check if rebalancing is needed
 	if node == nil || len(node.Contents) >= tree.minContents() {
 		//recalculate merkle root from leaf node
-		tree.ReCalculateMerkleRoot(node)
+		if node != nil {
+			//root is not nil
+			tree.ReCalculateMerkleRoot(node)
+		}
 		return
 	}
 

@@ -50,6 +50,12 @@ func TestMBTreePut2(t *testing.T) {
 			}
 
 		}
+		{
+			for i := max; i > 0; i-- {
+				tree.Remove(Item2{Key: i})
+				assertValidMerkleRoot(t, tree.MerkleBTreeRoot(), tree.calculateMerkleRoot())
+			}
+		}
 	}
 }
 
