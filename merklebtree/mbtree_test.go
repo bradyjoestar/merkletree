@@ -38,7 +38,7 @@ func TestMBTreePut1(t *testing.T) {
 	assertValidMerkleRoot(t, tree.MerkleBTreeRoot(), tree.calculateMerkleRoot())
 }
 
-func TestMBTreePut2(t *testing.T){
+func TestMBTreePut2(t *testing.T) {
 	const max = 1000
 	orders := []int{3, 4, 5, 6, 7, 8, 9, 10, 20, 100, 500}
 	for _, order := range orders {
@@ -51,6 +51,20 @@ func TestMBTreePut2(t *testing.T){
 
 		}
 	}
+}
+
+func TestMBTreeRemove1(t *testing.T){
+	tree := NewWith(3)
+	tree.Put(Item2{Key: 1, Value: 0})
+	tree.Put(Item2{Key: 2, Value: 1})
+	tree.Put(Item2{Key: 1, Value: 3})
+	tree.Put(Item2{Key: 3, Value: 6})
+	tree.Put(Item2{Key: 2, Value: 5})
+	tree.Put(Item2{Key: 4, Value: 2})
+	tree.Put(Item2{Key: 5, Value: 2})
+	tree.Put(Item2{Key: 6, Value: 2})
+	assertValidMerkleRoot(t, tree.MerkleBTreeRoot(), tree.calculateMerkleRoot())
+
 }
 
 func assertValidMerkleRoot(t *testing.T, str1 string, str2 string) {

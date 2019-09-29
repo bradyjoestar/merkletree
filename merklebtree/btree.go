@@ -527,6 +527,8 @@ func (tree *Tree) delete(node *Node, index int) {
 func (tree *Tree) rebalance(node *Node, deletedItem Content) {
 	// check if rebalancing is needed
 	if node == nil || len(node.Contents) >= tree.minContents() {
+		//recalculate merkle root from leaf node
+		tree.ReCalculateMerkleRoot(node)
 		return
 	}
 
@@ -543,6 +545,8 @@ func (tree *Tree) rebalance(node *Node, deletedItem Content) {
 			node.Children = append([]*Node{leftSiblingRightMostChild}, node.Children...)
 			tree.deleteChild(leftSibling, len(leftSibling.Children)-1)
 		}
+		tree.CalculateHash(node)
+		tree.CalculateHash(leftSibling)
 		return
 	}
 
@@ -559,6 +563,8 @@ func (tree *Tree) rebalance(node *Node, deletedItem Content) {
 			node.Children = append(node.Children, rightSiblingLeftMostChild)
 			tree.deleteChild(rightSibling, 0)
 		}
+		tree.CalculateHash(node)
+		tree.CalculateHash(rightSibling)
 		return
 	}
 
@@ -571,6 +577,7 @@ func (tree *Tree) rebalance(node *Node, deletedItem Content) {
 		tree.deleteContent(node.Parent, rightSiblingIndex-1)
 		tree.appendChildren(node.Parent.Children[rightSiblingIndex], node)
 		tree.deleteChild(node.Parent, rightSiblingIndex)
+		tree.CalculateHash(node)
 	} else if leftSibling != nil {
 		// merge with left sibling
 		contents := append([]*Content(nil), leftSibling.Contents...)
@@ -580,12 +587,14 @@ func (tree *Tree) rebalance(node *Node, deletedItem Content) {
 		tree.deleteContent(node.Parent, leftSiblingIndex)
 		tree.prependChildren(node.Parent.Children[leftSiblingIndex], node)
 		tree.deleteChild(node.Parent, leftSiblingIndex)
+		tree.CalculateHash(node)
 	}
 
 	// make the merged node the root if its parent was the root and the root is empty
 	if node.Parent == tree.Root && len(tree.Root.Contents) == 0 {
 		tree.Root = node
 		node.Parent = nil
+		tree.CalculateHash(tree.Root)
 		return
 	}
 
