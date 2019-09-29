@@ -306,6 +306,8 @@ func (tree *Tree) calculateMerkleRoot() string {
 	nodes := tree.deepSearch()
 	for i := len(nodes) - 1; i > 0; i-- {
 		for j := 0; j < len(nodes[i]); j++ {
+			//reset nodes[i][j] Hash
+			nodes[i][j].Hash = nil
 			tree.CalculateHash(nodes[i][j])
 		}
 	}
